@@ -1,13 +1,29 @@
-name: Docker Scout CVE Check
+name: Docker Scout CVE Reusable Workflow
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_call:
+    inputs:
+      org_name:
+        required: true
+        type: string
+      image_name:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+      environment:
+        required: false
+        type: string
+        default: "dev"
+    secrets:
+      docker_username:
+        required: true
+      docker_pat:
+        required: true
 
 jobs:
-  scan-custom-nginx-image:
+  scan:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,31 +36,25 @@ jobs:
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
           TAG="build-${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-      
-      - name: Docker login
-        run: |
-          echo "${{ secrets.DOCKER_HUB_PAT }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+      - name: Docker login (if needed for private images)
+        run: echo "${{ secrets.docker_pat }}" | docker login -u "${{ secrets.docker_username }}" --password-stdin
 
       - name: Build custom Nginx image
-        env:
-          ORG_NAME: ${{ secrets.DOCKER_HUB_ORG_NAME }}      
         run: |
-          TAG="1.28.0"
-          BASE_IMAGE="${ORG_NAME}/dhi-nginx:${TAG}"
-          echo "Building custom Nginx image with tag: custom-nginx:${{ steps.vars.outputs.tag }}"
-          echo "Using base image: $BASE_IMAGE"
+          BASE_IMAGE="${{ inputs.org_name }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
+          echo "ENVIRONMENT: ${{ inputs.environment }}"
+          echo "Building custom Nginx image from base: $BASE_IMAGE"
           docker build \
-          --build-arg BASE_IMAGE=$BASE_IMAGE \
-          -t custom-nginx:${{ steps.vars.outputs.tag }} .
+            --build-arg BASE_IMAGE=$BASE_IMAGE \
+            -t custom-nginx:${{ steps.vars.outputs.tag }} .
 
-      - name: Run Docker Scout CVE scan using docker/scout-cli
+      - name: Run Docker Scout CVE scan
         env:
-          DOCKER_SCOUT_HUB_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_SCOUT_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PAT }}
+          DOCKER_SCOUT_HUB_USER: ${{ secrets.docker_username }}
+          DOCKER_SCOUT_HUB_PASSWORD: ${{ secrets.docker_pat }}
         run: |
-          echo "Scanning custom-nginx:${{ steps.vars.outputs.tag }} image for critical/high CVEs..."
-
-          set +e  # Disable immediate exit on error
+          set +e
           docker run --rm \
             -u root \
             -e DOCKER_SCOUT_HUB_USER \
@@ -55,7 +65,7 @@ jobs:
             --only-severity critical,high \
             --exit-code
           SCOUT_EXIT_CODE=$?
-          set -e  # Re-enable fail on error for safety
+          set -e
 
           if [ $SCOUT_EXIT_CODE -eq 2 ]; then
             echo "::error title=Security Alert::Severe vulnerabilities found in custom-nginx image."
