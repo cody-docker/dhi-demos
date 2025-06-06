@@ -80,6 +80,7 @@ jobs:
             exit-code: true
             dockerhub-user: ${{ secrets.docker_username }}
             dockerhub-password: ${{ secrets.docker_pat }}
+            debug: true
 
       - name:  List files in workspace
         run: ls -al
