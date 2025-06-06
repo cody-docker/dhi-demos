@@ -73,7 +73,7 @@ jobs:
         with:
             command: cves
             image: custom-nginx:${{ steps.vars.outputs.tag }}
-            only-severity: critical,high
+            only-severities: critical,high
             format: sarif
             output: scout-results.sarif
             exit-code: true
