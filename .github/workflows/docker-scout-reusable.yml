@@ -59,19 +59,16 @@ jobs:
 
             echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
 
-      - name: Build custom Nginx image
+      - name: Build image for scan
         uses: docker/build-push-action@v6
         with:
             context: .
             tags: custom-nginx:${{ steps.vars.outputs.tag }}
             build-args: |
                 BASE_IMAGE=${{ steps.set-base.outputs.BASE_IMAGE }}
-            sbom: true
-            provenance: true
-            push: false  # Set to true if you want to push to a registry
+            load: true
 
       - name: Run Docker Scout CVE scan and generate SARIF
-        id: scan
         uses: docker/scout-action@v1.18.1
         with:
             command: cves
@@ -81,12 +78,24 @@ jobs:
             exit-code: true
             dockerhub-user: ${{ secrets.docker_username }}
             dockerhub-password: ${{ secrets.docker_pat }}
-            debug: true
-
-      - name:  List files in workspace
-        run: ls -al
 
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
             sarif_file: scout-results.sarif
+    
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+            driver: docker-container
+
+      - name: Rebuild and push image with SBOM and provenance
+        uses: docker/build-push-action@v6
+        with:
+            context: .
+            tags: custom-nginx:${{ steps.vars.outputs.tag }}
+            build-args: |
+                BASE_IMAGE=${{ steps.set-base.outputs.BASE_IMAGE }}
+            push: true
+            sbom: true
+            provenance: true
