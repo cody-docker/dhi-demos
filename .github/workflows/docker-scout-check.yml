@@ -16,7 +16,10 @@ jobs:
 
       - name: Set image tag
         id: vars
-        run: echo "tag=build-${{ github.run_number }}-${{ github.sha::7 }}" >> "$GITHUB_OUTPUT"
+        run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          TAG="build-${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Build custom Nginx image
         run: |
