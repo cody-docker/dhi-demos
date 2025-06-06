@@ -66,6 +66,8 @@ jobs:
             tags: custom-nginx:${{ steps.vars.outputs.tag }}
             build-args: |
                 BASE_IMAGE=${{ steps.set-base.outputs.BASE_IMAGE }}
+            sbom: true
+            provenance: true
             push: false  # Set to true if you want to push to a registry
 
       - name: Run Docker Scout CVE scan and generate SARIF
@@ -75,8 +77,7 @@ jobs:
             command: cves
             image: custom-nginx:${{ steps.vars.outputs.tag }}
             only-severities: critical,high
-            format: sarif
-            output: scout-results.sarif
+            sarif-file: scout-results.sarif
             exit-code: true
             dockerhub-user: ${{ secrets.docker_username }}
             dockerhub-password: ${{ secrets.docker_pat }}
