@@ -20,6 +20,10 @@ jobs:
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
           TAG="build-${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      
+      - name: Docker login
+        run: |
+          echo "${{ secrets.DOCKER_HUB_PAT }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
       - name: Build custom Nginx image
         env:
