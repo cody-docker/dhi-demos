@@ -41,11 +41,12 @@ It’s simple:
 1. Add the `dhi-nginx` container image to your Docker Hub organization.
 2. Update your GitHub Actions workflow to use the hardened image.
 
-Here’s what you’ll change in your workflow file:  
-Open `./github/workflows/docker-scout-cve-scan.yml` and update these values:
+Here’s what you’ll change in your workflow file: 
+ 
+Open [./github/workflows/docker-scout-cve-scan.yml](/github/workflows/docker-scout-cve-scan.yml) and update these values:
 
 ```yaml
-org_name: your-org-name
+org_name: 
 image_name: nginx
 ```
 
