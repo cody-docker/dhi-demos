@@ -22,6 +22,9 @@ on:
       docker_pat:
         required: true
 
+permissions:
+  security-events: write
+
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -64,30 +67,19 @@ jobs:
                 BASE_IMAGE=${{ steps.set-base.outputs.BASE_IMAGE }}
             push: false  # Set to true if you want to push to a registry
 
-      - name: Run Docker Scout CVE scan
-        env:
-          DOCKER_SCOUT_HUB_USER: ${{ secrets.docker_username }}
-          DOCKER_SCOUT_HUB_PASSWORD: ${{ secrets.docker_pat }}
-        run: |
-          set +e
-          docker run --rm \
-            -u root \
-            -e DOCKER_SCOUT_HUB_USER \
-            -e DOCKER_SCOUT_HUB_PASSWORD \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            docker/scout-cli \
-            cves custom-nginx:${{ steps.vars.outputs.tag }} \
-            --only-severity critical,high \
-            --exit-code
-          SCOUT_EXIT_CODE=$?
-          set -e
+      - name: Run Docker Scout CVE scan and generate SARIF
+        uses: docker/scout-action@v1
+        with:
+            command: cves
+            image: custom-nginx:${{ steps.vars.outputs.tag }}
+            only-severity: critical,high
+            format: sarif
+            output: scout-results.sarif
+            exit-code: true
+            dockerhub-user: ${{ secrets.docker_username }}
+            dockerhub-password: ${{ secrets.docker_pat }}
 
-          if [ $SCOUT_EXIT_CODE -eq 2 ]; then
-            echo "::error title=Security Alert::Severe vulnerabilities found in custom-nginx image."
-            exit 1
-          elif [ $SCOUT_EXIT_CODE -ne 0 ]; then
-            echo "::error title=Scanner Failure::Docker Scout failed with exit code $SCOUT_EXIT_CODE."
-            exit 1
-          else
-            echo "No severe vulnerabilities found in custom-nginx image."
-          fi
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+            sarif_file: scout-results.sarif
