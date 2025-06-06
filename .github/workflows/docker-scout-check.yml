@@ -32,16 +32,20 @@ jobs:
           DOCKER_SCOUT_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PAT }}
         run: |
           echo "Scanning custom-nginx:${{ steps.vars.outputs.tag }} image for critical/high CVEs..."
+
           docker run --rm \
             -e DOCKER_SCOUT_HUB_USER \
             -e DOCKER_SCOUT_HUB_PASSWORD \
-            -u root \
             -v /var/run/docker.sock:/var/run/docker.sock \
             docker/scout-cli cves custom-nginx:${{ steps.vars.outputs.tag }} --only-severity critical,high --exit-code
 
-          if [ $? -eq 2 ]; then
-            if [ $? -eq 2 ]; then
+          SCOUT_EXIT_CODE=$?
+
+          if [ $SCOUT_EXIT_CODE -eq 2 ]; then
             echo "::error title=Security Alert::Severe vulnerabilities found in custom-nginx image."
+            exit 1
+          elif [ $SCOUT_EXIT_CODE -ne 0 ]; then
+            echo "::error title=Scanner Failure::Docker Scout failed with exit code $SCOUT_EXIT_CODE."
             exit 1
           else
             echo "No severe vulnerabilities found in custom-nginx image."
