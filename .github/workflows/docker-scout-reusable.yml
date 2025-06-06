@@ -69,6 +69,7 @@ jobs:
             push: false  # Set to true if you want to push to a registry
 
       - name: Run Docker Scout CVE scan and generate SARIF
+        id: scan
         uses: docker/scout-action@v1.18.1
         with:
             command: cves
