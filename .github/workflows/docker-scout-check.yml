@@ -1,0 +1,43 @@
+name: Docker Scout CVE Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  scan-custom-nginx-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: vars
+        run: echo "tag=build-${{ github.run_number }}-${{ github.sha::7 }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build custom Nginx image
+        run: |
+          echo "Building custom Nginx image with tag: custom-nginx:${{ steps.vars.outputs.tag }}"
+          docker build -t custom-nginx:${{ steps.vars.outputs.tag }} ./NGINX
+
+      - name: Run Docker Scout CVE scan using docker/scout-cli
+        env:
+          DOCKER_SCOUT_HUB_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_SCOUT_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PAT }}
+        run: |
+          echo "Scanning custom-nginx:${{ steps.vars.outputs.tag }} image for critical/high CVEs..."
+          docker run --rm \
+            -e DOCKER_SCOUT_HUB_USER \
+            -e DOCKER_SCOUT_HUB_PASSWORD \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            docker/scout-cli cves custom-nginx:${{ steps.vars.outputs.tag }} --only-severity critical,high --exit-code
+
+          if [ $? -eq 2 ]; then
+            echo "Severe vulnerabilities found in custom-nginx image. Failing the build."
+            exit 1
+          else
+            echo "No severe vulnerabilities found in custom-nginx image."
+          fi
