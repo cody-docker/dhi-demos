@@ -33,14 +33,18 @@ jobs:
         run: |
           echo "Scanning custom-nginx:${{ steps.vars.outputs.tag }} image for critical/high CVEs..."
 
+          set +e  # Disable immediate exit on error
           docker run --rm \
+            -u root \
             -e DOCKER_SCOUT_HUB_USER \
             -e DOCKER_SCOUT_HUB_PASSWORD \
-            -u root \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            docker/scout-cli cves custom-nginx:${{ steps.vars.outputs.tag }} --only-severity critical,high --exit-code
-
+            docker/scout-cli \
+            cves custom-nginx:${{ steps.vars.outputs.tag }} \
+            --only-severity critical,high \
+            --exit-code
           SCOUT_EXIT_CODE=$?
+          set -e  # Re-enable fail on error for safety
 
           if [ $SCOUT_EXIT_CODE -eq 2 ]; then
             echo "::error title=Security Alert::Severe vulnerabilities found in custom-nginx image."
