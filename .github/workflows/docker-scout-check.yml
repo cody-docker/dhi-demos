@@ -40,7 +40,8 @@ jobs:
             docker/scout-cli cves custom-nginx:${{ steps.vars.outputs.tag }} --only-severity critical,high --exit-code
 
           if [ $? -eq 2 ]; then
-            echo "Severe vulnerabilities found in custom-nginx image. Failing the build."
+            if [ $? -eq 2 ]; then
+            echo "::error title=Security Alert::Severe vulnerabilities found in custom-nginx image."
             exit 1
           else
             echo "No severe vulnerabilities found in custom-nginx image."
