@@ -42,10 +42,20 @@ jobs:
 
       - name: Build custom Nginx image
         run: |
-          BASE_IMAGE="${{ inputs.org_name }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
-          echo "ENVIRONMENT: ${{ inputs.environment }}"
-          echo "Building custom Nginx image from base: $BASE_IMAGE"
-          docker build \
+            ORG_NAME="${{ inputs.org_name }}"
+            IMAGE_NAME="${{ inputs.image_name }}"
+            IMAGE_TAG="${{ inputs.image_tag }}"
+
+            if [ -n "$ORG_NAME" ]; then
+            BASE_IMAGE="${ORG_NAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+            else
+            BASE_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
+            fi
+
+            echo "ENVIRONMENT: ${{ inputs.environment }}"
+            echo "Building custom Nginx image from base: $BASE_IMAGE"
+
+            docker build \
             --build-arg BASE_IMAGE=$BASE_IMAGE \
             -t custom-nginx:${{ steps.vars.outputs.tag }} .
 
