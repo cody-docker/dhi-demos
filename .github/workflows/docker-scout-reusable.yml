@@ -81,6 +81,9 @@ jobs:
             dockerhub-user: ${{ secrets.docker_username }}
             dockerhub-password: ${{ secrets.docker_pat }}
 
+      - name:  List files in workspace
+        run: ls -al
+
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
