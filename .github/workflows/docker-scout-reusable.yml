@@ -40,7 +40,8 @@ jobs:
       - name: Docker login (if needed for private images)
         run: echo "${{ secrets.docker_pat }}" | docker login -u "${{ secrets.docker_username }}" --password-stdin
 
-      - name: Build custom Nginx image
+      - name: Set BASE_IMAGE
+        id: set-base
         run: |
             ORG_NAME="${{ inputs.org_name }}"
             IMAGE_NAME="${{ inputs.image_name }}"
@@ -52,12 +53,16 @@ jobs:
             BASE_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
             fi
 
-            echo "ENVIRONMENT: ${{ inputs.environment }}"
-            echo "Building custom Nginx image from base: $BASE_IMAGE"
+            echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
 
-            docker build \
-            --build-arg BASE_IMAGE=$BASE_IMAGE \
-            -t custom-nginx:${{ steps.vars.outputs.tag }} .
+      - name: Build custom Nginx image
+        uses: docker/build-push-action@v6
+        with:
+            context: .
+            tags: custom-nginx:${{ steps.vars.outputs.tag }}
+            build-args: |
+                BASE_IMAGE=${{ steps.set-base.outputs.BASE_IMAGE }}
+            push: false  # Set to true if you want to push to a registry
 
       - name: Run Docker Scout CVE scan
         env:
