@@ -1,7 +1,4 @@
-ARG ORG_NAME
-ARG BASE_IMAGE_TAG=1.28.0
-# BASE_IMAGE=nginx:${BASE_IMAGE_TAG}
-ARG BASE_IMAGE=${ORG_NAME}/dhi-nginx:${BASE_IMAGE_TAG}
+ARG BASE_IMAGE=nginx:latest
 FROM ${BASE_IMAGE}
 
 COPY nginx.conf /etc/nginx/nginx.conf

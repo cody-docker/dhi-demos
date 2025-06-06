@@ -25,9 +25,12 @@ jobs:
         env:
           ORG_NAME: ${{ secrets.DOCKER_HUB_ORG_NAME }}      
         run: |
+          TAG="1.28.0"
+          BASE_IMAGE="${ORG_NAME}/dhi-nginx:${TAG}"
           echo "Building custom Nginx image with tag: custom-nginx:${{ steps.vars.outputs.tag }}"
+          echo "Using base image: $BASE_IMAGE"
           docker build \
-          --build-arg ORG_NAME=$ORG_NAME \
+          --build-arg BASE_IMAGE=$BASE_IMAGE \
           -t custom-nginx:${{ steps.vars.outputs.tag }} .
 
       - name: Run Docker Scout CVE scan using docker/scout-cli
