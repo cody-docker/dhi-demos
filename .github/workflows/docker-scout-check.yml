@@ -24,7 +24,7 @@ jobs:
       - name: Build custom Nginx image
         run: |
           echo "Building custom Nginx image with tag: custom-nginx:${{ steps.vars.outputs.tag }}"
-          docker build -t custom-nginx:${{ steps.vars.outputs.tag }} ./NGINX
+          docker build -t custom-nginx:${{ steps.vars.outputs.tag }} .
 
       - name: Run Docker Scout CVE scan using docker/scout-cli
         env:
